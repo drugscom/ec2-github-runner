@@ -50,7 +50,7 @@ async function terminateEc2Instance() {
     core.info(`AWS EC2 instance ${config.input.ec2InstanceId} is terminated`);
     return;
   } catch (error) {
-    core.error(`AWS EC2 instance ${config.input.ec2InstanceId} termination error`);
+    core.error(`AWS EC2 instance termination error`);
     throw error;
   }
 }
@@ -72,8 +72,26 @@ async function waitForInstanceRunning(ec2InstanceId) {
   }
 }
 
+async function waitForInstanceTerminated() {
+  const ec2 = new AWS.EC2();
+
+  const params = {
+    InstanceIds: [config.input.ec2InstanceId],
+  };
+
+  try {
+    await ec2.waitFor('instanceTerminated', params).promise();
+    core.info(`AWS EC2 instance ${config.input.ec2InstanceId} is terminated`);
+    return;
+  } catch (error) {
+    core.error(`AWS EC2 instance termination error`);
+    throw error;
+  }
+}
+
 module.exports = {
   startEc2Instance,
   terminateEc2Instance,
   waitForInstanceRunning,
+  waitForInstanceTerminated,
 };

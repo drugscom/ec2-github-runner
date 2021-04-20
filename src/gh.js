@@ -83,8 +83,38 @@ async function waitForRunnerCreated(label) {
   });
 }
 
+async function waitForRunnerIdle() {
+  const timeoutMinutes = 5;
+  const retryIntervalSeconds = 10;
+  let waitSeconds = 0;
+
+  core.info(`Polling for idle runner every ${retryIntervalSeconds}s`);
+
+  return new Promise((resolve, reject) => {
+    const interval = setInterval(async () => {
+      const runner = await getRunner(config.input.label);
+
+      if (waitSeconds > timeoutMinutes * 60) {
+        core.error('GitHub self-hosted runner termination error');
+        clearInterval(interval);
+        reject(`A timeout of ${timeoutMinutes} minutes is exceeded. Please ensure your EC2 instance was terminated.`);
+      }
+
+      if (runner && runner.busy === false) {
+        core.info(`GitHub self-hosted runner ${runner.name} is idle and ready to be removed`);
+        clearInterval(interval);
+        resolve();
+      } else {
+        waitSeconds += retryIntervalSeconds;
+        core.info('Waiting...');
+      }
+    }, retryIntervalSeconds * 1000);
+  });
+}
+
 module.exports = {
   getRegistrationToken,
   removeRunner,
   waitForRunnerCreated,
+  waitForRunnerIdle,
 };
